@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=screen-width", initial-scale="1.0">
+    <title>Venn</title>
+</head>
+<body>
+    <div id="loading-screen" hidden>
+        <p>Loading...</p>
+        <span class="loader"></span>
+    </div>
+
+    <main>
+        <div id="card-area">
+            <div id="media-container">
+                <p id="title"></p>
+                <img id="media-cover" src="" alt="Media Cover">
+                <div id="extra-info">
+                    <p id="extra-info-text"></p>
+                </div>
+            </div>
+            <button id="like-button">Like</button>
+            <button id="skip-button">Skip</button>
+            <div id="status">
+                <p id="status-text"></p>
+            </div>
+        </div>
+    </main>
+
+    <div id="title-page" hidden>
+        <h2>Venn.</h2>
+        <p>For long distance phone calls, with nothing to watch.</p>
+        <button id="start-button">Start</button>
+    </div>
+
+    <div id="choose-media" hidden>
+        <button id="choose-movie-button">
+            <p>Movies and TV</p>
+            <i class="fa-solid fa-film"></i>
+        </button>
+        <button id="choose-yt">
+            <p>YouTube</p>
+            <i class="fa-brands fa-youtube"></i>
+        </button>
+    </div>
+
+    <div id="session-menu" hidden>
+        <p>Join a Venn session:</p>
+        <input type="text" id="session-code-input" placeholder="Enter session code">
+        <button id="join-session-button">Join</button>
+        <p>Host a session:</p>
+        <button id="host-session-button">Host</button>
+        <p id="session-code-display" hidden>Session Code: <span id="session-code"></span></p>
+    </div>
+
+    <div id="found" hidden>
+        <div id="content-card">
+            <img id="found-media-cover" src="" alt="Found Media Cover">
+            <p id="found-title"></p>
+        </div>
+        <button id="watch-button">Watch</button>
+        <button id="skip-button">Skip</button>
+        <p id="watch status"></p>
+    </div>
+</body>
+</html>
