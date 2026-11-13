@@ -1,9 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- meta tags -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=screen-width", initial-scale="1.0">
+    <meta name="viewport" content="width=screen-width, initial-scale=1.0">
+
+
+    <!-- font awesome -->
+    <script src="https://kit.fontawesome.com/1f0c3e5b8d.js" crossorigin="anonymous"></script>
+
+
+    <!-- css file -->
+    <link rel="stylesheet" href="css/style.css">
+
+
     <title>Venn</title>
+
 </head>
 <body>
     <div id="loading-screen" hidden>
@@ -12,26 +24,61 @@
     </div>
 
     <main>
+        <button id="like-button"></button>
+
         <div id="card-area">
-            <div id="media-container">
-                <p id="title"></p>
-                <img id="media-cover" src="" alt="Media Cover">
-                <div id="extra-info">
-                    <p id="extra-info-text"></p>
+            <div class="card" id="movie-tv-card">
+                <div class="container" id="movie-tv-container">
+                    <p id="movie-title"></p>
+                    <p id="year"></p>
+                    <span id="movie-or-tv"></span>
+                    <img id="movie-cover" src="" alt="Media Cover">
+                    <div id="extra-info">
+                        <p id="desc"></p>
+                        <span id="rt">
+                            <img id="rt-icon" src="" alt="Rotten Tomatoes Icon">
+                            <p id="rt-score"></p>
+                        </span>
+                        <span id="imdb">
+                            <img id="imdb-icon" src="" alt="IMDb Icon">
+                            <p id="imdb-score"></p>
+                        </span>
+                    </div>
+                </div>
+                <div id="status">
+                    <p id="status-text"></p>
                 </div>
             </div>
-            <button id="like-button">Like</button>
-            <button id="skip-button">Skip</button>
-            <div id="status">
-                <p id="status-text"></p>
+
+            <div class="card" id="youtube-card" hidden>
+                <div class="container" id="youtube-container">
+                    <p id="yt-title"></p>
+                    <p id="yt-channel"></p>
+                    <img id="yt-cover" src="" alt="YouTube Cover">
+                    <span id="yt-views">
+                        <i class="fa-solid fa-eye"></i>
+                        <p id="yt-views-count"></p>
+                    </span>
+                </div>
+                <div id="yt-status">
+                    <p id="yt-status-text"></p>
+                </div>
             </div>
+
+            <button id="skip-button"></button>
         </div>
+
     </main>
 
     <div id="title-page" hidden>
         <h2>Venn.</h2>
-        <p>For long distance phone calls, with nothing to watch.</p>
+        <p>For long distance relationships, with nothing to watch.</p>
         <button id="start-button">Start</button>
+    </div>
+
+    <div id="preferences" hidden>
+        <p>Preferences</p>
+        <!-- will design this screen later -->
     </div>
 
     <div id="choose-media" hidden>
@@ -60,8 +107,17 @@
             <p id="found-title"></p>
         </div>
         <button id="watch-button">Watch</button>
-        <button id="skip-button">Skip</button>
-        <p id="watch status"></p>
+        <button id="found-skip-button">Skip</button>
+        <p id="watch-status"></p>
     </div>
+
+
+    <!-- js files -->
+    <script src="config.js"></script>
+    <script src="data/sample-movies.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+
 </body>
 </html>
