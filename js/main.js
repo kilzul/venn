@@ -1,14 +1,28 @@
 import { $, renderCard } from "./render.js";
-import { fetchMovies } from "./api.js";
-import { sampleMovies } from "../data/sample-movies.js";
+import { fetchMovies, fetchGenreLookup, translateMovie } from "./api.js";
 
-const session = {
-    mode: "movies",
-    deck: sampleMovies,
-    index: 0,
-    seenIds: [],
-    likedIds: []
+const filters = {
+    genreIds: [28, 35], // Action, Comedy
+    region: "CA",
+    type: "free",
+    page: 1
 };
+
+ 
+let session = null;
+
+async function createSession(filters, genreList) {
+    const rawMovies = await fetchMovies(filters);
+    const deck = rawMovies.map(raw => translateMovie(raw, genreList));
+    return {
+        mode: "movies",
+        filters: filters,
+        deck: deck,
+        index: 0,
+        seenIds: [],
+        likedIds: []
+    };
+}
 
 function showCurrentCard() {
     const movie = session.deck[session.index];
@@ -22,6 +36,8 @@ function showCurrentCard() {
 }
 
 function handleChoice(liked) {
+    if (!session) return;
+
     const movie = session.deck[session.index];
     if (!movie) return;
 
@@ -34,36 +50,32 @@ function handleChoice(liked) {
     showCurrentCard();
 }
 
-$("like-button").addEventListener("click", () => handleChoice(true));
-$("skip-button").addEventListener("click", () => handleChoice(false));
-
-showCurrentCard();
-
 function showDeckEmpty() {
     $("movie-title").textContent = "No more cards!";
     $("year").textContent = "";
     $("desc").textContent = "";
-    $("rt-score").textContent = "";
     $("imdb-score").textContent = "";
     $("movie-cover").hidden = true;
     $("like-button").hidden = true;
     $("skip-button").hidden = true;
 }
 
-async function testFetch() {
+async function start() {
+    $("loading-screen").hidden = false;
     try {
-        const movies = await fetchMovies({
-            genreIds: [28, 35],
-            region: "CA",
-            page: 1,
-            rating: 7
-        });
-        console.log("count:", movies.length);
-        console.log("first movie:", movies[0]);
-        console.table(movies.slice(0, 5).map(m => ({ title: m.title, score: m.vote_average })));
+        const genreList = await fetchGenreLookup();
+        session = await createSession(filters, genreList);
+        console.log("deck size:", session.deck.length);
+        showCurrentCard();
     } catch (error) {
-        console.error("test failed:", error);
+        console.error(error);
+        $("movie-title").textContent = "Couldn't load movies.";
+    } finally {
+        $("loading-screen").hidden = true;
     }
 }
 
-testFetch();
+$("like-button").addEventListener("click", () => handleChoice(true));
+$("skip-button").addEventListener("click", () => handleChoice(false));
+
+start();

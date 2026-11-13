@@ -1,12 +1,14 @@
 export const $ = x => document.getElementById(x);
 
 function renderMovieCard(movie) {
-    $("movie-title").textContent = movie.title;
-    $("year").textContent = movie.year;
-    $("movie-cover").src = movie.cover;
-    $("desc").textContent = movie.desc;
-    $("rt-score").textContent = movie.rtScore;
-    $("imdb-score").textContent = movie.imdbScore;
+    $("movie-title").textContent = movie.title; // raw: title // fallback: leave field blank
+    $("year").textContent = movie.year; // raw: release_date // change: year.slice(0, 4) // fallback: leave field blank
+    $("movie-cover").src = movie.cover; // raw: poster_path // change: "https://image.tmdb.org/t/p/w500" + poster_path // fallback: placeholder image
+    $("desc").textContent = movie.desc; // raw: overview // fallback: "No description available."
+    $("score").textContent = movie.score; // raw: vote_average // change: Math.round((score * 10) / 10) // fallback: N/A
+
+    movie.id = "movie-" + movie.id; // raw: id // change: "movie-" + id // fallback: leave field blank
+    
 }
 
 function renderYouTubeCard(video) {

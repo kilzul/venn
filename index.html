@@ -24,24 +24,23 @@
     </div>
 
     <main>
-        <button id="like-button"></button>
+        <button id="skip-button"></button>
 
         <div id="card-area">
             <div class="card" id="movie-tv-card">
                 <div class="container" id="movie-tv-container">
+
+                    <img id="movie-cover" src="" alt="Media Cover">
                     <p id="movie-title"></p>
                     <p id="year"></p>
-                    <span id="movie-or-tv"></span>
-                    <img id="movie-cover" src="" alt="Media Cover">
+                    <p id="desc"></p>
                     <div id="extra-info">
-                        <p id="desc"></p>
-                        <span id="rt">
-                            <img id="rt-icon" src="" alt="Rotten Tomatoes Icon">
-                            <p id="rt-score"></p>
-                        </span>
-                        <span id="imdb">
-                            <img id="imdb-icon" src="" alt="IMDb Icon">
-                            <p id="imdb-score"></p>
+                        <div id="genres">
+                            <!-- genre pills will go here -->
+                        </div>
+                        <span id="rating">
+                            <span id="rating-icon"><i class="fa-solid fa-star"></i></span>
+                            <p id="score"></p>
                         </span>
                     </div>
                 </div>
@@ -65,7 +64,7 @@
                 </div>
             </div>
 
-            <button id="skip-button"></button>
+            <button id="like-button"></button>
         </div>
 
     </main>
