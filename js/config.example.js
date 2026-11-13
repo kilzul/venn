@@ -1,1 +1,1 @@
-const TMDB_API_KEY = "YOUR_TMDB_API_KEY"; // Replace with your actual TMDB API key
+export const TMDB_API_KEY = "YOUR_TMDB_API_KEY"; // Replace with your actual TMDB API key

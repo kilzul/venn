@@ -1,4 +1,4 @@
-const $ = x => document.getElementById(x);
+export const $ = x => document.getElementById(x);
 
 function renderMovieCard(movie) {
     $("movie-title").textContent = movie.title;
@@ -16,7 +16,7 @@ function renderYouTubeCard(video) {
     $("yt-views-count").textContent = video.views;
 }
 
-function renderCard(card) {
+export function renderCard(card) {
     if (card.type !== "video") {
         $("movie-tv-card").hidden = false;
         $("youtube-card").hidden = true;

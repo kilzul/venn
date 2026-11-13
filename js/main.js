@@ -1,4 +1,6 @@
-
+import { $, renderCard } from "./render.js";
+import { fetchMovies } from "./api.js";
+import { sampleMovies } from "../data/sample-movies.js";
 
 const session = {
     mode: "movies",
@@ -47,3 +49,21 @@ function showDeckEmpty() {
     $("like-button").hidden = true;
     $("skip-button").hidden = true;
 }
+
+async function testFetch() {
+    try {
+        const movies = await fetchMovies({
+            genreIds: [28, 35],
+            region: "CA",
+            page: 1,
+            rating: 7
+        });
+        console.log("count:", movies.length);
+        console.log("first movie:", movies[0]);
+        console.table(movies.slice(0, 5).map(m => ({ title: m.title, score: m.vote_average })));
+    } catch (error) {
+        console.error("test failed:", error);
+    }
+}
+
+testFetch();
