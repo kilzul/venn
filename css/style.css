@@ -1,0 +1,60 @@
+/* 
+
+[hidden] { display: none !important; }
+
+#genre-container { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.genre-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 2px solid #888;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.genre-button.selected { border-color: #4a6cf7; background: #e8edff; }
+.genre-score { font-weight: bold; }
+.genre-score:empty { display: none; }
+
+.genre-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    margin-right: 6px;
+    border-radius: 999px;
+    background: #eee;
+    font-size: 0.85em;
+}
+    
+#genre-container {
+    --gap: 12px;
+
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--gap);
+
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.genre-button {
+    
+     Eight buttons fit across when there is enough room.
+     Each button cannot grow beyond one-eighth of the row.
+     
+    flex: 1 1 110px;
+    max-width: calc((100% - 7 * var(--gap)) / 8);
+    min-height: 60px;
+}
+
+@media (max-width: 700px) {
+    .genre-button {
+        max-width: calc((100% - var(--gap)) / 2);
+    }
+}
+
+*/

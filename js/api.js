@@ -59,7 +59,7 @@ export async function fetchGenreLookup() {
         throw new Error(`TMDB request failed with status ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json(); 
     return data.genres;
 }
 

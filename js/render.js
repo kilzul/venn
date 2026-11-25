@@ -3,7 +3,9 @@ export const $ = x => document.getElementById(x);
 function renderMovieCard(movie) {
     $("movie-title").textContent = movie.title; // raw: title // fallback: leave field blank
     $("year").textContent = movie.year; // raw: release_date // change: year.slice(0, 4) // fallback: leave field blank
-    $("movie-cover").src = movie.cover; // raw: poster_path // change: "https://image.tmdb.org/t/p/w500" + poster_path // fallback: placeholder image
+    const cover = $("movie-cover");
+    cover.src = movie.cover; // raw: poster_path // change: "https://image.tmdb.org/t/p/w500" + poster_path // fallback: placeholder image
+    cover.hidden = !movie.cover;
     $("desc").textContent = movie.desc; // raw: overview // fallback: "No description available."
     $("score").textContent = movie.score; // raw: vote_average // change: Math.round((score * 10) / 10) // fallback: N/A
 
