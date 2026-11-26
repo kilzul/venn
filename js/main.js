@@ -1,10 +1,11 @@
 import { $, renderCard } from "./render.js";
 import { fetchMovies, fetchGenreLookup, translateMovie } from "./api.js";
 import { hostSession, joinSession, closeSession, sendMessage } from "./network.js";
+import { MAX_PICKS, combinePrefs } from "./matching.js";
 
 
 
-const MAX_PICKS = 5;
+
 const STORAGE_KEY = "venn-prefs";  // the one localStorage key for all prefs
 
 const movieFilters = {
@@ -15,16 +16,18 @@ const movieFilters = {
 
 
 let role = null;
+let session = null;
+let mode = "movie"; // placeholder, will change later
+
+
 let partnerPrefs = null;
 let myPrefsReady = false;
-
-
 let prefs = loadPrefs();
+let prefsLocked = false;
+
+
 let genreList = null;
-let session = null;
 
-
-let mode = "movie";
 
 // saving and loading prefs from localstorage 
 
@@ -48,14 +51,6 @@ function savePrefs() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
 }
 
-// helpers for genre ranking
-
-function getScore(genreId) {
-    const position = prefs.movie.genreOrder.indexOf(genreId);
-    if (position === -1) return 0;
-    return MAX_PICKS - position;
-}
-
 // in case tmdb changes list 
 function cleanSavedGenres() {
     const validIds = genreList.map(genre => genre.id);
@@ -65,6 +60,7 @@ function cleanSavedGenres() {
 }
 
 function toggleGenre(genreId) {
+    if (prefsLocked) return;
     const order = prefs.movie.genreOrder;
     const position = order.indexOf(genreId);
     const message = $("prefs-message");
@@ -125,7 +121,7 @@ function refreshGenreButtons() {
         }
     });
 
-    $("prefs-continue").disabled = prefs.movie.genreOrder.length === 0;
+    $("prefs-continue").disabled = prefsLocked || prefs.movie.genreOrder.length === 0;
 }
 
 // deck building and swiping
@@ -147,11 +143,15 @@ async function loadMovieDeck(genreIds) {
     }
 }
 
-async function startMovieSession() {
+async function tryBuildDeck() {
+    if (role !== "host") return;
+    if (!myPrefsReady || partnerPrefs === null) return;
+
     $("loading-screen").hidden = false;
 
     try {
-        const result = await loadMovieDeck(prefs.movie.genreOrder);
+        const combined = combinePrefs(prefs.movie.genreOrder, partnerPrefs);
+        const result = await loadMovieDeck(combined);
 
         session = {
             mode: "movie",
@@ -161,14 +161,19 @@ async function startMovieSession() {
             seenIds: [],
             likedIds: []
         };
-        console.log("deck size:", session.deck.length, "genres used:", session.genreIds);
+        console.log("host deck:", session.deck.length, "genres:", session.genreIds);
+
+        sendMessage({ type: "deck", genreIds: result.genreIds, deck: result.deck });
 
         resetSwipeScreen();
         changePageTo("swipe");
         showCurrentCard();
     } catch (error) {
         console.error(error);
-        $("prefs-message").textContent = "Couldn't load movies. Try again.";
+        $("prefs-status").textContent = "Couldn't build the deck. Try again.";
+        myPrefsReady = false;
+        prefsLocked = false;
+        refreshGenreButtons();
     } finally {
         $("loading-screen").hidden = true;
     }
@@ -259,12 +264,23 @@ async function showPrefsPage() {
 
 const handlers = {
     // placeholder msgs for testing
-    "hello" : () => {
-        console.log("host got hello, replying...");
-        sendMessage({ type: "hello-back"});
+    "prefs": (message) => {
+        partnerPrefs = message.genreOrder;
+        tryBuildDeck();
     },
-    "hello-back" : () => {
-        console.log("guest got hello-back");
+
+    "deck": (message) => {
+        session = {
+            mode: "movie",
+            genreIds: message.genreIds,
+            deck: message.deck,
+            index: 0,
+            seenIds: [],
+            likedIds: []
+        };
+        resetSwipeScreen();
+        changePageTo("swipe");
+        showCurrentCard();
     }
 };
 
@@ -293,6 +309,13 @@ function handleClose() {
     changePageTo("session-menu");
 }
 
+function resetSessionState() {
+    partnerPrefs = null;
+    myPrefsReady = false;
+    prefsLocked = false;
+    session = null;
+}
+
 function showCode() {
     $("session-code").textContent = session.code;
     $("session-code-display").hidden = false;
@@ -306,6 +329,7 @@ $("start-button").addEventListener("click", () => {
 });
 
 $("host-session-button").addEventListener("click", () => {
+    resetSessionState(); 
     role = "host";
 
     hostSession({
@@ -324,6 +348,7 @@ $("host-session-button").addEventListener("click", () => {
 });
 
 $("join-session-button").addEventListener("click", () => {
+    resetSessionState();
     role = "guest";
     $("join-status").textContent = "Connecting...";
 
@@ -349,7 +374,17 @@ $("choose-movie").addEventListener("click", async () => {
 
 $("prefs-continue").addEventListener("click", () => {
     savePrefs();
-    startMovieSession();
+    prefsLocked = true;
+    refreshGenreButtons();
+
+    if (role === "host") {
+        myPrefsReady = true;
+        tryBuildDeck();
+    } else if (role === "guest") {
+        sendMessage({ type: "prefs-ready", genreOrder: prefs.movie.genreOrder });
+    }
+
+    $("prefs-status").textContent = "Waiting for partner...";
 });
 
 $("back-to-prefs").addEventListener("click", () => {
