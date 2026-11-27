@@ -1,60 +1,646 @@
-/* 
 
-[hidden] { display: none !important; }
+/*  designed for a box of about 440 x 520 */
 
-#genre-container { display: flex; flex-wrap: wrap; gap: 8px; }
+[hidden] { 
+    display: none !important; 
+}
+
+/* 0 Fonts */
+
+@font-face {
+    font-family: SpaceMono;
+    src: url("../fonts/SpaceMono-Regular.ttf") format("truetype");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: PressStart2P;
+    src: url("../fonts/PressStart2P-Regular.ttf") format("truetype");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
+/* ---------- 1. Design tokens ---------- */
+
+:root {
+    --bg: #b064f1;
+    --surface: #f4f5f9;
+    --surface-2: #e9ebf3;
+    --text: #fff;
+    --muted: #d2d6e2;
+    --accent: #f177d3;
+    --accent-text: #ffffff;
+    --accent-soft: #ffffff81;
+    --danger: #e5484d;
+    --star: #f5b301;
+
+    --intro-cursor: #ffffff;
+
+    --radius: 16px;
+    --radius-sm: 10px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 16px;
+    --space-4: 24px;
+
+    --logo-font: PressStart2P, sans-serif;
+    --font: SpaceMono, monospace;
+    --shadow: 0 6px 18px rgba(20, 24, 50, 0.12);
+
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #5a2588;
+        --surface: #1c1e29;
+        --surface-2: #272a38;
+        --text: #000;
+        --muted: #9aa0b4;
+        --accent: #a553a8;
+        --accent-text: #10122a;
+        --accent-soft: #ffffff81;
+        --intro-cursor: #000;
+        --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* ---------- 2. Base ---------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { 
+    width: 440px;
+    height: 520px;
+    margin: 0; 
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.4;
+    overflow-x: hidden;
+}
+
+p, h2 { 
+    margin: 0; 
+}
+
+#title-page h2 {
+    font-family: var(--logo-font);
+    font-size: 3.5rem;
+    letter-spacing: -0.03em;
+}
+
+
+img { 
+    display: block; 
+}
+
+button, input { 
+    font: inherit; 
+    color: inherit; 
+}
+
+button { 
+    border: none; 
+    cursor: pointer; 
+}
+
+button:disabled { 
+    opacity: 0.45; 
+    cursor: not-allowed; 
+}
+
+:focus-visible { 
+    outline: 3px solid var(--accent); 
+    outline-offset: 2px; 
+}
+
+.icon { 
+    width: 1.25em;
+    height: 1.25em; 
+    flex-shrink: 0; 
+}
+
+.page {
+    height: 100%;
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+/* ---------- 3. Buttons ---------- */
+
+#start-button,
+#join-session-button,
+#host-session-button,
+#prefs-continue,
+#watch-button,
+#retry-button,
+#watch-link {
+    display: block;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    transition: transform 120ms var(--ease-out), filter 120ms;
+}
+
+#found-skip-button {
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    transition: transform 120ms var(--ease-out), filter 120ms;
+}
+
+#keep-swiping-button {
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+@media (hover: hover) {
+    #start-button:hover,
+    #join-session-button:hover,
+    #host-session-button:hover,
+    #prefs-continue:hover:not(:disabled),
+    #watch-button:hover:not(:disabled),
+    #retry-button:hover,
+    #watch-link:hover,
+    #found-skip-button:hover:not(:disabled) { filter: brightness(1.08); }
+}
+
+#start-button:active,
+#join-session-button:active,
+#host-session-button:active,
+#prefs-continue:active:not(:disabled),
+#watch-button:active:not(:disabled),
+#retry-button:active,
+#watch-link:active,
+#found-skip-button:active:not(:disabled) { 
+    transform: scale(0.97); 
+}
+
+/* ---------- 4. Title page ---------- */
+
+#title-page {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+#title-page h2 { font-size: 3rem; letter-spacing: -0.03em; }
+#title-page p { color: var(--muted); max-width: 28ch; }
+#start-button { margin-top: var(--space-3); min-width: 160px; }
+
+/* ---------- 5. Mode page (only if you keep it) ---------- */
+
+#choose-mode { justify-content: center; }
+
+#choose-mode button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+}
+
+/* ---------- 6. Session menu ---------- */
+
+#session-menu { justify-content: center; }
+
+#session-menu > p:not([id]) { font-weight: 700; }
+#join-status + p { margin-top: var(--space-3); }
+
+#session-code-input {
+    padding: 12px 14px;
+    border: 2px solid var(--surface-2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+#session-code-input:focus-visible { outline: none; border-color: var(--accent); }
+
+#session-code-display { text-align: center; color: var(--muted); }
+
+#session-code {
+    display: inline-block;
+    margin-left: var(--space-2);
+    padding: 6px 16px;
+    border: 4px solid var(--accent);
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    user-select: all;
+}
+
+/* status lines everywhere */
+#join-status, #host-status, #prefs-status, #prefs-message,
+#choose-status, #watch-status {
+    min-height: 1.4em;
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+#prefs-message { color: var(--danger); }
+
+/* ---------- 7. Preferences ---------- */
+
+#prefs-title { font-size: 1.25rem; font-weight: 700; }
+#prefs-instructions { color: var(--muted); font-size: 0.9rem; }
+
+#genre-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: var(--space-2);
+}
 
 .genre-button {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    border: 2px solid #888;
+    border: 2px solid var(--surface-2);
     border-radius: 999px;
-    background: transparent;
-    cursor: pointer;
+    background: var(--surface);
+    color: var(--text);
+    transition: background 150ms, border-color 150ms, transform 120ms var(--ease-out);
 }
 
-.genre-button.selected { border-color: #4a6cf7; background: #e8edff; }
-.genre-score { font-weight: bold; }
+.genre-button.selected { border-color: var(--accent); background: var(--accent-soft); }
+.genre-button:active { transform: scale(0.95); }
+
+.genre-score { font-weight: 700; color: var(--accent); }
 .genre-score:empty { display: none; }
+
+/* ---------- 8. Swipe screen ---------- */
+
+/* Skip is a child of #swipe but Like is inside #card-area.
+   display: contents flattens #card-area so both can sit in one row. */
+#swipe {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+}
+
+#card-area { display: contents; }
+
+#swipe .card { grid-column: 1 / -1; grid-row: 1; }
+
+#skip-button { grid-row: 2; grid-column: 1; justify-self: end; }
+#like-button { grid-row: 2; grid-column: 2; justify-self: start; }
+
+#skip-button, #like-button {
+    width: 64px;
+    height: 64px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+    transition: transform 120ms var(--ease-out), filter 120ms;
+}
+
+#skip-button { background: var(--surface); color: var(--danger); }
+#like-button { background: var(--accent); color: var(--accent-text); }
+#skip-button:active, #like-button:active { transform: scale(0.9); }
+#skip-button .icon, #like-button .icon { width: 28px; height: 28px; }
+
+.card {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+/* movie card: poster on the left, details on the right, description below */
+#movie-tv-container {
+    flex: 1;
+    min-height: 0;
+    padding: var(--space-3);
+    display: grid;
+    grid-template-columns: 40% minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+        "cover title"
+        "cover year"
+        "cover info"
+        "desc  desc";
+    column-gap: var(--space-3);
+    row-gap: var(--space-2);
+}
+
+/* no poster: use the full width */
+#movie-tv-container:has(#movie-cover[hidden]) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+        "title"
+        "year"
+        "info"
+        "desc";
+}
+
+#movie-cover {
+    grid-area: cover;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+#movie-title {
+    grid-area: title;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+
+#year { grid-area: year; color: var(--muted); }
+
+#extra-info {
+    grid-area: info;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+#genres { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .genre-pill {
     display: inline-block;
     padding: 2px 10px;
-    margin-right: 6px;
     border-radius: 999px;
-    background: #eee;
-    font-size: 0.85em;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 600;
 }
-    
-#genre-container {
-    --gap: 12px;
 
+#rating { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+#rating-icon { display: inline-flex; color: var(--star); }
+
+#desc {
+    grid-area: desc;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: var(--space-1);
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+/* youtube card */
+#youtube-container {
+    flex: 1;
+    min-height: 0;
+    padding: var(--space-3);
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+#yt-cover {
+    order: -1;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+#yt-title { font-size: 1.1rem; font-weight: 700; line-height: 1.25; }
+#yt-channel { color: var(--muted); }
+#yt-views { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+
+/* ---------- 9. Swipe animations ---------- */
+
+@keyframes card-in {
+    from { opacity: 0; transform: translateY(18px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes card-out-right {
+    from { opacity: 1; transform: translateX(0) rotate(0deg); }
+    to   { opacity: 0; transform: translateX(110%) rotate(14deg); }
+}
+
+@keyframes card-out-left {
+    from { opacity: 1; transform: translateX(0) rotate(0deg); }
+    to   { opacity: 0; transform: translateX(-110%) rotate(-14deg); }
+}
+
+.card-enter       { animation: card-in 280ms var(--ease-out) both; }
+.card-leave-right { animation: card-out-right 260ms var(--ease-in) both; }
+.card-leave-left  { animation: card-out-left 260ms var(--ease-in) both; }
+
+/* ---------- 10. Match screen ---------- */
+
+#found {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+}
+
+#content-card {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-height: 0;
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    text-align: center;
+    overflow: hidden;
+    animation: pop-in 320ms var(--ease-out) both;
+}
+
+#found-media-cover {
+    flex: 1 1 0;
+    min-height: 0;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
+
+#found-title { font-size: 1.3rem; font-weight: 700; }
+
+#found-description {
+    max-height: 4.5em;
+    overflow-y: auto;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+#watch-status { grid-column: 1 / -1; grid-row: 2; }
+#found-skip-button { grid-column: 1; grid-row: 3; }
+#watch-button { grid-column: 2; grid-row: 3; }
+
+@keyframes pop-in {
+    0%   { opacity: 0; transform: scale(0.8); }
+    60%  { opacity: 1; transform: scale(1.04); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- 11. Celebration ---------- */
+
+#celebration { align-items: center; text-align: center; }
+
+#celebration h2 {
+    color: var(--accent);
+    font-size: 1.8rem;
+    animation: pop-in 400ms var(--ease-out) both;
+}
+
+#celebration-cover {
+    flex: 1 1 0;
+    min-height: 0;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    animation: pop-in 500ms var(--ease-out) 100ms both;
+}
+
+#celebration-title { font-size: 1.2rem; font-weight: 700; }
+
+#celebration-description {
+    max-height: 4.2em;
+    overflow-y: auto;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+#celebration #watch-link,
+#celebration #keep-swiping-button { width: 100%; }
+
+/* ---------- 12. Waiting and loading ---------- */
+
+#waiting {
+    align-items: center;
     justify-content: center;
-    gap: var(--gap);
-
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 20px;
+    text-align: center;
 }
 
-.genre-button {
-    
-     Eight buttons fit across when there is enough room.
-     Each button cannot grow beyond one-eighth of the row.
-     
-    flex: 1 1 110px;
-    max-width: calc((100% - 7 * var(--gap)) / 8);
-    min-height: 60px;
+#waiting-text { font-size: 1.1rem; font-weight: 600; }
+
+.loader {
+    width: 36px;
+    height: 36px;
+    border: 4px solid var(--surface-2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 800ms linear infinite;
 }
 
-@media (max-width: 700px) {
-    .genre-button {
-        max-width: calc((100% - var(--gap)) / 2);
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(4px);
+}
+
+/* ---------- 13. Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .loader {
+        animation-duration: 1.6s !important;
+        animation-iteration-count: infinite !important;
     }
 }
 
-*/
+/* intro animation */ 
+
+/* ---------- Intro: typing title ---------- */
+
+.letter { opacity: 0; }
+.letter.visible { opacity: 1; }
+
+.cursor {
+    display: inline-block;
+    position: relative;
+    width: 0;
+    height: 0.9em;
+}
+
+.cursor::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0.04em;
+    width: 0.06em;
+    background: var(--intro-cursor);
+    animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+/* the tagline and Start button wait, then fade in once the word is typed */
+.title-rest {
+    transition: opacity 400ms var(--ease-out), transform 400ms var(--ease-out);
+}
+
+.intro-hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+}

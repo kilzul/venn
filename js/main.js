@@ -4,6 +4,7 @@ import { fetchMovies, fetchGenreLookup, translateMovie } from "./api.js";
 import { hostSession, joinSession, closeSession, sendMessage } from "./network.js";
 import { MAX_PICKS, combinePrefs, getScore } from "./matching.js";
 import { buildWatchUrl } from "./links.js";
+import { playIntro } from "./intro.js";
 
 
 
@@ -15,6 +16,7 @@ const movieFilters = {
     type: "free",
     page: 1
 };
+const MAX_TMDB_PAGE = 500;
 
 
 let role = null;
@@ -29,6 +31,24 @@ let prefsLocked = false;
 
 
 let genreList = null;
+
+let swiping = false;
+
+// animation helpers
+
+function playCardAnimation(className) {
+    const card = document.querySelector(".card:not([hidden])");
+    if (!card) return Promise.resolve();
+
+    card.classList.remove("card-enter", "card-leave-left", "card-leave-right");
+    void card.offsetWidth;   // forces the browser to restart the animation
+    card.classList.add(className);
+
+    return new Promise((resolve) => {
+        card.addEventListener("animationend", resolve, { once: true });
+        setTimeout(resolve, 400);   // safety net if the event never fires
+    });
+}
 
 
 // saving and loading prefs from localstorage 
@@ -158,8 +178,6 @@ async function tryBuildDeck() {
         session = makeSession(result.deck, result.genreIds);
         sendMessage({ type: "deck", genreIds: result.genreIds, deck: result.deck });
 
-        resetSwipeScreen();
-        changePageTo("swipe");
         showCurrentCard();
     } catch (error) {
         console.error(error);
@@ -172,23 +190,136 @@ async function tryBuildDeck() {
     }
 }
 
-// swipe scren
-
-function resetSwipeScreen() {
-    $("like-button").hidden = false;
-    $("skip-button").hidden = false;
-    $("back-to-prefs").hidden = true;
-}
-
 function showCurrentCard() {
     const movie = session.deck[session.index];
 
     if (movie === undefined) {
-        showDeckEmpty();
+        reachEndOfDeck();
         return;
     }
 
+    changePageTo("swipe");
     renderCard(movie);
+    playCardAnimation("card-enter");
+}
+
+function reachEndOfDeck() {
+    if (!session.iFinished) {
+        session.iFinished = true;
+        sendMessage({ type: "finished" });
+    }
+    showEndOfDeck();
+    checkBothFinished();
+}
+
+function showEndOfDeck() {
+    if (session.currentMatchId !== null) return;
+
+    let text;
+    if (session.deckEnded) {
+        text = "That's everything! No more movies to show.";
+    } else if (session.iFinished && session.partnerFinished) {
+        text = "Finding more movies...";
+    } else {
+        text = "Your partner is still swiping...";
+    }
+
+    $("waiting-text").textContent = text;
+    $("retry-button").hidden = true;
+    changePageTo("waiting");
+}
+
+function checkBothFinished() {
+    if (role !== "host" || !session) return;
+    if (!session.iFinished || !session.partnerFinished) return;
+    if (session.fetching || session.deckEnded) return;
+    loadMoreCards();
+}
+
+async function fetchMoreCards(currentSession) {
+    const genreIds = [...currentSession.genreIds];
+    let page = currentSession.page + 1;
+
+    if (currentSession.matchesThisBatch === 0 && genreIds.length > 0) {
+        genreIds.pop();
+        page = 1;
+    }
+
+    const known = new Set(currentSession.deck.map(card => card.id));
+
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+        let rawMovies = [];
+        if (page <= MAX_TMDB_PAGE) {
+            rawMovies = await fetchMovies({ ...movieFilters, genreIds, page });
+        }
+
+        if (rawMovies.length === 0) {
+            if (genreIds.length === 0) return null;
+            genreIds.pop();
+            page = 1;
+            continue;
+        }
+
+        const cards = rawMovies
+            .map(raw => translateMovie(raw, genreList))
+            .filter(card => {
+                if (known.has(card.id)) return false;
+                known.add(card.id);
+                return true;
+            });
+
+        if (cards.length > 0) {
+            return { cards, genreIds, page };
+        }
+
+        page += 1;
+    }
+
+    return null;
+}
+
+async function loadMoreCards() {
+    if (role !== "host" || !session || session.fetching || session.deckEnded) return;
+
+    const currentSession = session;
+    currentSession.fetching = true;
+    $("retry-button").hidden = true;
+    $("waiting-text").textContent = "Finding more movies...";
+
+    try {
+        const result = await fetchMoreCards(currentSession);
+        if (session !== currentSession || role !== "host") return;
+
+        if (result === null) {
+            currentSession.deckEnded = true;
+            sendMessage({ type: "deck-end" });
+            showEndOfDeck();
+            return;
+        }
+
+        currentSession.page = result.page;
+        currentSession.matchesThisBatch = 0;
+        sendMessage({ type: "more", cards: result.cards, genreIds: result.genreIds });
+        addCards(result.cards, result.genreIds);
+    } catch (error) {
+        console.error(error);
+        if (session !== currentSession || role !== "host") return;
+        $("waiting-text").textContent = "Couldn't load more movies.";
+        $("retry-button").hidden = false;
+    } finally {
+        currentSession.fetching = false;
+    }
+}
+
+function addCards(cards, genreIds) {
+    session.deck.push(...cards);
+    session.genreIds = genreIds;
+    session.iFinished = false;
+    session.partnerFinished = false;
+
+    if (session.currentMatchId === null) {
+        showCurrentCard();
+    }
 }
 
 function findCard(id) {
@@ -203,6 +334,7 @@ function isMatch(id) {
 
 function handleNewMatch(id) {
     session.matchedIds.push(id);
+    session.matchesThisBatch += 1;
 
     if (session.currentMatchId === null) {
         showMatch(id);
@@ -224,22 +356,29 @@ function showMatch(id) {
     changePageTo("found");
 }
 
-function handleChoice(liked) {
-    if (!session) return;
+async function handleChoice(liked) {
+    if (!session || swiping) return;
 
     const movie = session.deck[session.index];
     if (!movie) return;
 
+    swiping = true;
+
     session.seenIds.push(movie.id);
     if (liked) {
         session.likedIds.push(movie.id);
-        sendMessage({
-            type: "like",
-            movieId: movie.id
-        });
+        sendMessage({ type: "like", movieId: movie.id });
+    }
+    session.index = session.index + 1;
+
+    try {
+        await playCardAnimation(liked ? "card-leave-right" : "card-leave-left");
+    } finally {
+        swiping = false;
     }
 
-    session.index = session.index + 1;
+    // the session can vanish or a match can open while the card is leaving
+    if (!session || session.currentMatchId !== null) return;
 
     if (liked && isMatch(movie.id)) {
         handleNewMatch(movie.id);
@@ -305,7 +444,6 @@ function continueAfterMatch() {
         return;
     }
 
-    changePageTo("swipe");
     showCurrentCard();
 }
 
@@ -319,20 +457,6 @@ function showCelebration(id) {
     $("watch-link").href = buildWatchUrl(card);
 
     changePageTo("celebration");
-}
-
-function showDeckEmpty() {
-    $("movie-tv-card").hidden = false;
-    $("youtube-card").hidden = true;
-    $("movie-title").textContent = "No more cards!";
-    $("year").textContent = "";
-    $("desc").textContent = "";
-    $("score").textContent = "";
-    $("genres").innerHTML = "";
-    $("movie-cover").hidden = true;
-    $("like-button").hidden = true;
-    $("skip-button").hidden = true;
-    $("back-to-prefs").hidden = false;
 }
 
 // switch screens
@@ -385,8 +509,6 @@ const handlers = {
     "deck": (message) => {
         if (role !== "guest") return;
         session = makeSession(message.deck, message.genreIds);
-        resetSwipeScreen();
-        changePageTo("swipe");
         showCurrentCard();
     },
 
@@ -414,6 +536,32 @@ const handlers = {
         session.partnerVotes[message.movieId] = message.choice;
         updateMatchStatus();
         checkResolution(message.movieId);
+    },
+
+    "finished": () => {
+        if (!session) return;
+        session.partnerFinished = true;
+        if (session.iFinished) showEndOfDeck();
+        checkBothFinished();
+    },
+
+    "more": (message) => {
+        if (role !== "guest" || !session) return;
+        if (!Array.isArray(message.cards) || !Array.isArray(message.genreIds)) return;
+
+        const known = new Set(session.deck.map(card => card.id));
+        const cards = message.cards.filter(card => {
+            if (!card || known.has(card.id)) return false;
+            known.add(card.id);
+            return true;
+        });
+        addCards(cards, message.genreIds);
+    },
+
+    "deck-end": () => {
+        if (role !== "guest" || !session) return;
+        session.deckEnded = true;
+        showEndOfDeck();
     }
 };
 
@@ -460,6 +608,12 @@ function makeSession(deck, genreIds) {
         partnerLikedIds: [],
         matchedIds: [],
         currentMatchId: null,
+        iFinished: false,
+        partnerFinished: false,
+        deckEnded: false,
+        fetching: false,
+        page: 1,
+        matchesThisBatch: 0,
         myVotes: {},
         partnerVotes: {},
         resolvedIds: [],
@@ -545,15 +699,15 @@ $("prefs-continue").addEventListener("click", () => {
     $("prefs-status").textContent = "Waiting for partner...";
 });
 
-$("back-to-prefs").addEventListener("click", () => {
-    refreshGenreButtons();
-    changePageTo("preferences");
-});
-
 $("like-button").addEventListener("click", () => handleChoice(true));
 $("skip-button").addEventListener("click", () => handleChoice(false));
 $("watch-button").addEventListener("click", () => castVote("watch"));
 $("found-skip-button").addEventListener("click", () => castVote("no"));
 $("keep-swiping-button").addEventListener("click", continueAfterMatch);
+$("retry-button").addEventListener("click", loadMoreCards);
 
 window.addEventListener("beforeunload", closeSession);
+
+playIntro();
+
+window.venn = { changePageTo, renderCard, get session() { return session; } }; // temp for testing

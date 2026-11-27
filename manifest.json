@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "Venn",
+    "version": "0.1.0",
+    "description": "Swipe on movies with your partner and find what you both want to watch.",
+    "permissions": ["storage"],
+    "host_permissions": ["https://api.themoviedb.org/*"],
+    "action": {
+        "default_title": "Open Venn",
+        "default_popup": "index.html",
+        "default_icon": {
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "icons": {
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    }
+}

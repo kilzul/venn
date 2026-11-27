@@ -5,9 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- font awesome -->
-    <script src="https://kit.fontawesome.com/e113552f85.js" crossorigin="anonymous"></script>
-
     <!-- css file -->
     <link rel="stylesheet" href="css/style.css">
 
@@ -19,9 +16,15 @@
         <span class="loader"></span>
     </div>
 
+    <div class="page" id="waiting" hidden>
+        <p id="waiting-text"></p>
+        <span class="loader"></span>
+        <button id="retry-button" hidden>Try again</button>
+    </div>
+
 
     <div class="page" id="title-page">
-        <h2>Venn.</h2>
+        <h2>venn.</h2>
         <p>For long distance relationships, with nothing to watch.</p>
         <button id="start-button">Start</button>
     </div>
@@ -29,11 +32,11 @@
     <div class="page" id="choose-mode" hidden>
         <button id="choose-movie">
             <p>Movies and TV</p>
-            <i class="fa-solid fa-film"></i>
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
         </button>
         <button id="choose-yt" disabled>
             <p>YouTube</p>
-            <i class="fa-brands fa-youtube"></i>
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
             <small>Coming soon</small>
         </button>
         <p id="choose-status"></p>
@@ -65,7 +68,7 @@
 
 
     <main class="page" id="swipe" hidden>
-        <button id="skip-button" aria-label="Skip"><i class="fa-solid fa-xmark"></i></button>
+        <button id="skip-button" aria-label="Skip"><svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 
         <div id="card-area">
             <div class="card" id="movie-tv-card" hidden>
@@ -76,10 +79,10 @@
                     <p id="desc"></p>
                     <div id="extra-info">
                         <div id="genres"></div>
-                        <span id="rating">
-                            <span id="rating-icon"><i class="fa-solid fa-star"></i></span>
+                        <div id="rating">
+                            <span id="rating-icon"><svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
                             <p id="score"></p>
-                        </span>
+                        </div>
                     </div>
                 </div>
                 <div id="status">
@@ -92,20 +95,18 @@
                     <p id="yt-title"></p>
                     <p id="yt-channel"></p>
                     <img id="yt-cover" src="" alt="YouTube Cover">
-                    <span id="yt-views">
-                        <i class="fa-solid fa-eye"></i>
+                    <div id="yt-views">
+                        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         <p id="yt-views-count"></p>
-                    </span>
+                    </div>
                 </div>
                 <div id="yt-status">
                     <p id="yt-status-text"></p>
                 </div>
             </div>
 
-            <button id="like-button" aria-label="Like"><i class="fa-solid fa-heart"></i></button>
+            <button id="like-button" aria-label="Like"><svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
         </div>
-
-        <button id="back-to-prefs" hidden>Change preferences</button>
     </main>
 
     <div class="page" id="found" hidden>
@@ -124,12 +125,12 @@
         <img id="celebration-cover" src="" alt="">
         <p id="celebration-title"></p>
         <p id="celebration-description"></p>
-        <button><a id="watch-link" href="#" target="_blank" rel="noopener noreferrer">Watch now</a></button>
+        <a id="watch-link" href="#" target="_blank" rel="noopener noreferrer">Watch now</a>
         <button id="keep-swiping-button">Keep swiping</button>
     </div>
 
-    <!-- peer js import --->
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- peer js import -->
+    <script src="lib/peerjs.min.js"></script>
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
