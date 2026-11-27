@@ -13,26 +13,49 @@ function makeSessionCode() {
 }
 
 export function hostSession(callbacks) {
+    closeSession();
+
     const code = makeSessionCode();
-    peer = new Peer("venn-" + code);
-    peer.on("open", (id) => {
-        console.log("Hosting session with code:", code);
+    const currentPeer = new Peer("venn-" + code);
+    peer = currentPeer;
+
+    currentPeer.on("open", () => {
+        if (peer !== currentPeer) return;
         callbacks.onCode(code);
     });
-    peer.on("error", (err) => {
+    currentPeer.on("error", (err) => {
+        if (peer !== currentPeer) return;
+        console.error("Peer error:", err);
+
         if (err.type === "unavailable-id") {
-            console.log("Unavailable id, retrying...");
+            console.warn("Unavailable session code, retrying...");
             closeSession();
             hostSession(callbacks);
+            return;
         }
+
+        closeSession();
+        callbacks.onError?.("Couldn't host session. Try again.");
     });
-    peer.on("connection", (incoming) => {
+    currentPeer.on("connection", (incoming) => {
+        if (peer !== currentPeer) {
+            incoming.close();
+            return;
+        }
+        if (conn) {
+            incoming.close();
+            return;
+        }
+
         conn = incoming;
-        console.log("Peer connected:", incoming.peer);
         incoming.on("data", (data) => {
-            callbacks.onMessage(data);
+            if (conn === incoming) {
+                callbacks.onMessage(data);
+            }
         });
         incoming.on("close", () => {
+            if (conn !== incoming) return;
+            conn = null;
             callbacks.onClose();
         });
         callbacks.onPartnerConnected(incoming);
@@ -40,17 +63,17 @@ export function hostSession(callbacks) {
 }
 
 export function closeSession() {
-    if (conn) {
-        conn.close();
-        conn = null;
-    }
-    if (peer) {
-        peer.destroy();
-        peer = null;
-    }
+    const currentConn = conn;
+    const currentPeer = peer;
+    conn = null;
+    peer = null;
+
+    currentConn?.close();
+    currentPeer?.destroy();
 }
 
 export function joinSession(code, callbacks) {
+    closeSession();
     code = code.trim().toUpperCase();
     let connectionTimeout = null;
 
@@ -61,36 +84,47 @@ export function joinSession(code, callbacks) {
         }
     };
 
-    peer = new Peer();
-    peer.on("open", () => {
-        console.log("Joining session with code:", code);
-        const outgoing = peer.connect("venn-" + code);
+    const currentPeer = new Peer();
+    peer = currentPeer;
+    currentPeer.on("open", () => {
+        if (peer !== currentPeer) return;
+        const outgoing = currentPeer.connect("venn-" + code);
         conn = outgoing;
         connectionTimeout = setTimeout(() => {
             connectionTimeout = null;
+            closeSession();
             callbacks.onError?.("Couldn't connect");
         }, 10_000);
 
         outgoing.on("open", () => {
+            if (conn !== outgoing) {
+                outgoing.close();
+                return;
+            }
             clearConnectionTimeout();
             callbacks.onConnected?.();
         });
         outgoing.on("data", (data) => {
-            callbacks.onMessage?.(data);
+            if (conn === outgoing) {
+                callbacks.onMessage?.(data);
+            }
         });
         outgoing.on("close", () => {
+            if (conn !== outgoing) return;
             clearConnectionTimeout();
+            conn = null;
             callbacks.onClose?.();
         });
     });
-    peer.on("error", (error) => {
+    currentPeer.on("error", (error) => {
+        if (peer !== currentPeer) return;
         clearConnectionTimeout();
         console.error("Peer error:", error);
-        if (error.type === "peer-unavailable") {
-            callbacks.onError?.("That code wasn't found.");
-        } else {
-            callbacks.onError?.("Couldn't connect. Try again.");
-        }
+        const message = error.type === "peer-unavailable"
+            ? "That code wasn't found."
+            : "Couldn't connect. Try again.";
+        closeSession();
+        callbacks.onError?.(message);
     });
 }
 

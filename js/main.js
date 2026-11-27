@@ -1,7 +1,9 @@
+// imports
 import { $, renderCard } from "./render.js";
 import { fetchMovies, fetchGenreLookup, translateMovie } from "./api.js";
 import { hostSession, joinSession, closeSession, sendMessage } from "./network.js";
-import { MAX_PICKS, combinePrefs } from "./matching.js";
+import { MAX_PICKS, combinePrefs, getScore } from "./matching.js";
+import { buildWatchUrl } from "./links.js";
 
 
 
@@ -109,7 +111,7 @@ function refreshGenreButtons() {
 
     buttons.forEach(button => {
         const genreId = Number(button.dataset.genreId);
-        const score = getScore(genreId);
+        const score = getScore(prefs.movie.genreOrder, genreId);
         const scoreLabel = button.querySelector(".genre-score");
 
         if (score > 0) {
@@ -153,16 +155,7 @@ async function tryBuildDeck() {
         const combined = combinePrefs(prefs.movie.genreOrder, partnerPrefs);
         const result = await loadMovieDeck(combined);
 
-        session = {
-            mode: "movie",
-            genreIds: result.genreIds,
-            deck: result.deck,
-            index: 0,
-            seenIds: [],
-            likedIds: []
-        };
-        console.log("host deck:", session.deck.length, "genres:", session.genreIds);
-
+        session = makeSession(result.deck, result.genreIds);
         sendMessage({ type: "deck", genreIds: result.genreIds, deck: result.deck });
 
         resetSwipeScreen();
@@ -198,6 +191,39 @@ function showCurrentCard() {
     renderCard(movie);
 }
 
+function findCard(id) {
+    return session.deck.find(card => card.id === id);
+}
+
+function isMatch(id) {
+    return session.likedIds.includes(id)
+        && session.partnerLikedIds.includes(id)
+        && !session.matchedIds.includes(id);
+}
+
+function handleNewMatch(id) {
+    session.matchedIds.push(id);
+
+    if (session.currentMatchId === null) {
+        showMatch(id);
+    } else {
+        session.pendingMatches.push(id);
+    }
+}
+
+function showMatch(id) {
+    const card = findCard(id);
+
+    $("found-media-cover").src = card.cover;
+    $("found-media-cover").hidden = !card.cover;
+    $("found-title").textContent = card.title;
+    $("found-description").textContent = card.description;
+    $("found-skip-button").hidden = false;
+    session.currentMatchId = id;
+    updateMatchStatus();
+    changePageTo("found");
+}
+
 function handleChoice(liked) {
     if (!session) return;
 
@@ -207,10 +233,92 @@ function handleChoice(liked) {
     session.seenIds.push(movie.id);
     if (liked) {
         session.likedIds.push(movie.id);
+        sendMessage({
+            type: "like",
+            movieId: movie.id
+        });
     }
 
     session.index = session.index + 1;
+
+    if (liked && isMatch(movie.id)) {
+        handleNewMatch(movie.id);
+    } else {
+        showCurrentCard();
+    }
+}
+
+function castVote(choice) {
+    if (!session || session.currentMatchId === null) return;
+
+    const id = session.currentMatchId;
+    if (session.myVotes[id] !== undefined) return;
+
+    session.myVotes[id] = choice;
+    sendMessage({ type: "vote", movieId: id, choice: choice });
+
+    updateMatchStatus();
+    checkResolution(id);
+}
+
+function updateMatchStatus() {
+    const id = session.currentMatchId;
+    if (id === null) return;
+
+    const mine = session.myVotes[id];
+    const theirs = session.partnerVotes[id];
+
+    let text = "";
+    if (mine !== undefined) {
+        text = "Waiting for your partner...";
+    } else if (theirs === "watch") {
+        text = "Your partner wants to watch this!";
+    }
+
+    $("watch-status").textContent = text;
+    $("watch-button").disabled = mine !== undefined;
+    $("found-skip-button").disabled = mine !== undefined;
+}
+
+function checkResolution(id) {
+    const mine = session.myVotes[id];
+    const theirs = session.partnerVotes[id];
+
+    if (mine === undefined || theirs === undefined) return;
+    if (session.resolvedIds.includes(id)) return;
+
+    session.resolvedIds.push(id);
+
+    if (mine === "watch" && theirs === "watch") {
+        showCelebration(id);
+    } else {
+        continueAfterMatch();
+    }
+}
+
+function continueAfterMatch() {
+    session.currentMatchId = null;
+
+    const next = session.pendingMatches.shift();
+    if (next !== undefined) {
+        showMatch(next);
+        return;
+    }
+
+    changePageTo("swipe");
     showCurrentCard();
+}
+
+function showCelebration(id) {
+    const card = findCard(id);
+
+    $("celebration-cover").src = card.cover;
+    $("celebration-cover").hidden = !card.cover;
+    $("celebration-title").textContent = card.title;
+    $("celebration-description").textContent = card.description;
+    $("watch-link").href = buildWatchUrl(card);
+
+    changePageTo("celebration");
 }
 
 function showDeckEmpty() {
@@ -241,7 +349,7 @@ function changePageTo(pageId) {
 }
 
 async function showPrefsPage() {
-    role === "host" ? $("host-status").textContent = "" : $("join-status").textContent = "";
+    setSessionStatus("");
     $("prefs-status").textContent = "";
     $("loading-screen").hidden = false;
 
@@ -254,45 +362,69 @@ async function showPrefsPage() {
         changePageTo("preferences");
     } catch (error) {
         console.error(error);
-        role === "host" ? $("host-status").textContent = "Couldn't load genres. Try again." : $("join-status").textContent = "Couldn't load genres. Try again.";
+        setSessionStatus("Couldn't load genres. Try again.");
     } finally {
         $("loading-screen").hidden = true;
     }
 }
 
+function setSessionStatus(text) {
+    const statusId = role === "host" ? "host-status" : "join-status";
+    $(statusId).textContent = text;
+}
+
 // session config
 
 const handlers = {
-    // placeholder msgs for testing
-    "prefs": (message) => {
+    "prefs-ready": (message) => {
+        if (role !== "host" || !Array.isArray(message.genreOrder)) return;
         partnerPrefs = message.genreOrder;
         tryBuildDeck();
     },
 
     "deck": (message) => {
-        session = {
-            mode: "movie",
-            genreIds: message.genreIds,
-            deck: message.deck,
-            index: 0,
-            seenIds: [],
-            likedIds: []
-        };
+        if (role !== "guest") return;
+        session = makeSession(message.deck, message.genreIds);
         resetSwipeScreen();
         changePageTo("swipe");
         showCurrentCard();
+    },
+
+    "like": (message) => {
+        if (!session) return;
+
+        const known = session.deck.some(movie => movie.id === message.movieId);
+        if (!known) return;
+
+        if (!session.partnerLikedIds.includes(message.movieId)) {
+            session.partnerLikedIds.push(message.movieId);
+        }
+
+        if (isMatch(message.movieId)) {
+            handleNewMatch(message.movieId);
+        }
+    },
+
+    "vote": (message) => {
+        if (!session) return;
+        if (!findCard(message.movieId)) return;
+        if (message.choice !== "watch" && message.choice !== "no") return;
+        if (session.partnerVotes[message.movieId] !== undefined) return;
+
+        session.partnerVotes[message.movieId] = message.choice;
+        updateMatchStatus();
+        checkResolution(message.movieId);
     }
 };
 
 function handleMessage(message) {
-    const handler = handlers[message.type];
-
-    if (!handler) {
+    if (!message || typeof message.type !== "string") return;
+    if (!Object.hasOwn(handlers, message.type)) {
         console.warn("Unknown message type:", message.type);
         return;
     }
 
-    handler(message);
+    handlers[message.type](message);
 }
 
 function handleClose() {
@@ -301,6 +433,7 @@ function handleClose() {
     role = null;
 
     closeSession();
+    resetSessionState();
     const statusId = disconnectedRole === "host" ? "host-status" : "join-status";
     $(statusId).textContent = "Your partner disconnected.";
 
@@ -316,8 +449,26 @@ function resetSessionState() {
     session = null;
 }
 
-function showCode() {
-    $("session-code").textContent = session.code;
+function makeSession(deck, genreIds) {
+    return {
+        mode: "movie",
+        genreIds: genreIds,
+        deck: deck,
+        index: 0,
+        seenIds: [],
+        likedIds: [],
+        partnerLikedIds: [],
+        matchedIds: [],
+        currentMatchId: null,
+        myVotes: {},
+        partnerVotes: {},
+        resolvedIds: [],
+        pendingMatches: []
+    };
+}
+
+function showCode(code) {
+    $("session-code").textContent = code
     $("session-code-display").hidden = false;
     $("host-status").textContent = "Waiting for partner...";
 }
@@ -334,25 +485,32 @@ $("host-session-button").addEventListener("click", () => {
 
     hostSession({
         onCode: (code) => {
-            session = { code };
-            showCode();
+            showCode(code);
         },
         onPartnerConnected: (conn) => {
-            console.log("Partner connected:", conn.peer);
             $("host-status").textContent = "Partner connected!";
             showPrefsPage();
         },
         onMessage: handleMessage,
+        onError: (message) => {
+            $("host-status").textContent = message;
+        },
         onClose: handleClose
     });
 });
 
 $("join-session-button").addEventListener("click", () => {
+    const code = $("session-code-input").value.trim();
+    if (!code) {
+        $("join-status").textContent = "Enter a code first.";
+        return;
+    }
+
     resetSessionState();
     role = "guest";
     $("join-status").textContent = "Connecting...";
 
-    joinSession($("session-code-input").value, {
+    joinSession(code, {
         onConnected: () => {
             $("join-status").textContent = "Connected!";
             showPrefsPage();
@@ -394,5 +552,8 @@ $("back-to-prefs").addEventListener("click", () => {
 
 $("like-button").addEventListener("click", () => handleChoice(true));
 $("skip-button").addEventListener("click", () => handleChoice(false));
+$("watch-button").addEventListener("click", () => castVote("watch"));
+$("found-skip-button").addEventListener("click", () => castVote("no"));
+$("keep-swiping-button").addEventListener("click", continueAfterMatch);
 
 window.addEventListener("beforeunload", closeSession);

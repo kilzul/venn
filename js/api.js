@@ -37,8 +37,6 @@ export async function fetchMovies(filters) {
         params.set("vote_average.gte", Math.round(filters.rating * 10) / 10);
     }
 
-    console.log(`${params}`); // for testing, remove later
-
     const response = await fetch(`https://api.themoviedb.org/3/discover/movie?${params}`);
 
     if (!response.ok) {

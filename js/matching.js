@@ -8,23 +8,8 @@ export function getScore(order, genreId) {
 }
 
 export function combinePrefs(hostOrder, guestOrder) {
-    // default cases
-    if (hostOrder.length == 0 && guestOrder.length == 0) {
-        return [];
-    }
-    if (hostOrder.length == 0) {
-        return guestOrder;
-    }
-    if (guestOrder.length == 0) {
-        return hostOrder;
-    }
-    if (hostOrder === guestOrder) {
-        return hostOrder;
-    }
-
     const genres = hostOrder.filter(genreId => guestOrder.includes(genreId));
 
-    // default if no common genres 
     if (genres.length === 0) {
         const combinedWithScores = [...hostOrder, ...guestOrder].map(genreId => ({
             genreId: genreId,

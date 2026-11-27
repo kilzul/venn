@@ -60,7 +60,7 @@
         <p>Host a session:</p>
         <button id="host-session-button">Host</button>
         <p id="host-status"></p>
-        <p id="session-code-display" hidden>Session Code: <p id="session-code"></p></p>
+        <p id="session-code-display" hidden>Session Code: <span id="session-code"></span></p>
     </div>
 
 
@@ -112,10 +112,20 @@
         <div id="content-card">
             <img id="found-media-cover" src="" alt="Found Media Cover">
             <p id="found-title"></p>
+            <p id="found-description"></p>
         </div>
         <button id="watch-button">Watch</button>
         <button id="found-skip-button">Skip</button>
         <p id="watch-status"></p>
+    </div>
+
+    <div class="page" id="celebration" hidden>
+        <h2>It's a match!</h2>
+        <img id="celebration-cover" src="" alt="">
+        <p id="celebration-title"></p>
+        <p id="celebration-description"></p>
+        <button><a id="watch-link" href="#" target="_blank" rel="noopener noreferrer">Watch now</a></button>
+        <button id="keep-swiping-button">Keep swiping</button>
     </div>
 
     <!-- peer js import --->
