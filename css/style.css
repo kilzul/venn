@@ -5,7 +5,7 @@
     display: none !important; 
 }
 
-/* 0 Fonts */
+/* fonts */
 
 @font-face {
     font-family: SpaceMono;
@@ -23,14 +23,16 @@
     font-display: swap;
 }
 
-/* ---------- 1. Design tokens ---------- */
+/* design tokens and stuff */
 
 :root {
     --bg: #b064f1;
     --surface: #f4f5f9;
     --surface-2: #e9ebf3;
     --text: #fff;
-    --muted: #d2d6e2;
+    --muted: #b3b6c0;
+    --card-text: #343746;
+    --card-muted: #686d7c;
     --accent: #f177d3;
     --accent-text: #ffffff;
     --accent-soft: #ffffff81;
@@ -61,6 +63,8 @@
         --surface-2: #272a38;
         --text: #000;
         --muted: #9aa0b4;
+        --card-text: var(--muted);
+        --card-muted: var(--muted);
         --accent: #a553a8;
         --accent-text: #10122a;
         --accent-soft: #ffffff81;
@@ -69,9 +73,11 @@
     }
 }
 
-/* ---------- 2. Base ---------- */
+/* base */
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after {
+    box-sizing: border-box;
+}
 
 html, body { 
     width: 440px;
@@ -137,7 +143,7 @@ button:disabled {
     gap: var(--space-3);
 }
 
-/* ---------- 3. Buttons ---------- */
+/* buttons */
 
 #start-button,
 #join-session-button,
@@ -181,7 +187,9 @@ button:disabled {
     #watch-button:hover:not(:disabled),
     #retry-button:hover,
     #watch-link:hover,
-    #found-skip-button:hover:not(:disabled) { filter: brightness(1.08); }
+    #found-skip-button:hover:not(:disabled) {
+        filter: brightness(1.08);
+    }
 }
 
 #start-button:active,
@@ -195,7 +203,7 @@ button:disabled {
     transform: scale(0.97); 
 }
 
-/* ---------- 4. Title page ---------- */
+/* title page */
 
 #title-page {
     align-items: center;
@@ -203,13 +211,26 @@ button:disabled {
     text-align: center;
 }
 
-#title-page h2 { font-size: 3rem; letter-spacing: -0.03em; }
-#title-page p { color: var(--muted); max-width: 28ch; }
-#start-button { margin-top: var(--space-3); min-width: 160px; }
+#title-page h2 {
+    font-size: 3rem;
+    letter-spacing: -0.03em;
+}
 
-/* ---------- 5. Mode page (only if you keep it) ---------- */
+#title-page p {
+    color: var(--muted);
+    max-width: 28ch;
+}
 
-#choose-mode { justify-content: center; }
+#start-button {
+    margin-top: var(--space-3);
+    min-width: 160px;
+}
+
+/* mode page */
+
+#choose-mode {
+    justify-content: center;
+}
 
 #choose-mode button {
     display: flex;
@@ -222,12 +243,19 @@ button:disabled {
     color: var(--text);
 }
 
-/* ---------- 6. Session menu ---------- */
+/* session menu */
 
-#session-menu { justify-content: center; }
+#session-menu {
+    justify-content: center;
+}
 
-#session-menu > p:not([id]) { font-weight: 700; }
-#join-status + p { margin-top: var(--space-3); }
+#session-menu > p:not([id]) {
+    font-weight: 700;
+}
+
+#join-status + p {
+    margin-top: var(--space-3);
+}
 
 #session-code-input {
     padding: 12px 14px;
@@ -237,11 +265,18 @@ button:disabled {
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.12em;
+    color: var(--muted);
 }
 
-#session-code-input:focus-visible { outline: none; border-color: var(--accent); }
+#session-code-input:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+}
 
-#session-code-display { text-align: center; color: var(--muted); }
+#session-code-display {
+    text-align: center;
+    color: var(--muted);
+}
 
 #session-code {
     display: inline-block;
@@ -251,14 +286,14 @@ button:disabled {
     border-radius: 999px;
     background: var(--accent-soft);
     color: var(--text);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: SpaceMono, monospace;
     font-size: 1.4rem;
     font-weight: 700;
     letter-spacing: 0.15em;
     user-select: all;
 }
 
-/* status lines everywhere */
+
 #join-status, #host-status, #prefs-status, #prefs-message,
 #choose-status, #watch-status {
     min-height: 1.4em;
@@ -267,12 +302,21 @@ button:disabled {
     text-align: center;
 }
 
-#prefs-message { color: var(--danger); }
+#prefs-message {
+    color: var(--danger);
+}
 
-/* ---------- 7. Preferences ---------- */
+/* prefs and genres*/
 
-#prefs-title { font-size: 1.25rem; font-weight: 700; }
-#prefs-instructions { color: var(--muted); font-size: 0.9rem; }
+#prefs-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+#prefs-instructions {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
 
 #genre-container {
     flex: 1;
@@ -284,6 +328,29 @@ button:disabled {
     gap: var(--space-2);
 }
 
+#genre-container::-webkit-scrollbar,
+#desc::-webkit-scrollbar,
+#found-description::-webkit-scrollbar,
+#celebration-description::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+#genre-container::-webkit-scrollbar-thumb,
+#desc::-webkit-scrollbar-thumb,
+#found-description::-webkit-scrollbar-thumb,
+#celebration-description::-webkit-scrollbar-thumb {
+    background: var(--card-muted);
+    border-radius: 999px;
+}
+
+#genre-container::-webkit-scrollbar-track,
+#desc::-webkit-scrollbar-track,
+#found-description::-webkit-scrollbar-track,
+#celebration-description::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 .genre-button {
     display: inline-flex;
     align-items: center;
@@ -292,20 +359,31 @@ button:disabled {
     border: 2px solid var(--surface-2);
     border-radius: 999px;
     background: var(--surface);
-    color: var(--text);
+    color: var(--muted);
     transition: background 150ms, border-color 150ms, transform 120ms var(--ease-out);
 }
 
-.genre-button.selected { border-color: var(--accent); background: var(--accent-soft); }
-.genre-button:active { transform: scale(0.95); }
+.genre-button.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--text);
+}
+.genre-button:active {
+    transform: scale(0.95);
+}
 
-.genre-score { font-weight: 700; color: var(--accent); }
-.genre-score:empty { display: none; }
+.genre-score {
+    font-weight: 700;
+    color: var(--accent);
+}
 
-/* ---------- 8. Swipe screen ---------- */
+.genre-score:empty {
+    display: none;
+}
 
-/* Skip is a child of #swipe but Like is inside #card-area.
-   display: contents flattens #card-area so both can sit in one row. */
+/* main screen (swipe screen) */
+
+
 #swipe {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -313,12 +391,26 @@ button:disabled {
     gap: var(--space-3);
 }
 
-#card-area { display: contents; }
+#card-area {
+    display: contents;
+}
 
-#swipe .card { grid-column: 1 / -1; grid-row: 1; }
+#swipe .card {
+    grid-column: 1 / -1;
+    grid-row: 1;
+}
 
-#skip-button { grid-row: 2; grid-column: 1; justify-self: end; }
-#like-button { grid-row: 2; grid-column: 2; justify-self: start; }
+#skip-button {
+    grid-row: 2;
+    grid-column: 1;
+    justify-self: end;
+}
+
+#like-button {
+    grid-row: 2;
+    grid-column: 2;
+    justify-self: start;
+}
 
 #skip-button, #like-button {
     width: 64px;
@@ -330,10 +422,26 @@ button:disabled {
     transition: transform 120ms var(--ease-out), filter 120ms;
 }
 
-#skip-button { background: var(--surface); color: var(--danger); }
-#like-button { background: var(--accent); color: var(--accent-text); }
-#skip-button:active, #like-button:active { transform: scale(0.9); }
-#skip-button .icon, #like-button .icon { width: 28px; height: 28px; }
+#skip-button {
+    background: var(--surface);
+    color: var(--danger);
+}
+
+#like-button {
+    background: var(--accent);
+    color: var(--accent-text);
+}
+
+#skip-button:active,
+#like-button:active {
+    transform: scale(0.9);
+}
+
+#skip-button .icon,
+#like-button .icon {
+    width: 28px;
+    height: 28px;
+}
 
 .card {
     min-height: 0;
@@ -341,11 +449,13 @@ button:disabled {
     flex-direction: column;
     border-radius: var(--radius);
     background: var(--surface);
+    color: var(--card-text);
+    --muted: var(--card-muted);
     box-shadow: var(--shadow);
     overflow: hidden;
 }
 
-/* movie card: poster on the left, details on the right, description below */
+
 #movie-tv-container {
     flex: 1;
     min-height: 0;
@@ -394,7 +504,10 @@ button:disabled {
     overflow: hidden;
 }
 
-#year { grid-area: year; color: var(--muted); }
+#year {
+    grid-area: year;
+    color: var(--muted);
+}
 
 #extra-info {
     grid-area: info;
@@ -405,7 +518,11 @@ button:disabled {
     gap: var(--space-2);
 }
 
-#genres { display: flex; flex-wrap: wrap; gap: 6px; }
+#genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
 
 .genre-pill {
     display: inline-block;
@@ -417,8 +534,17 @@ button:disabled {
     font-weight: 600;
 }
 
-#rating { display: flex; align-items: center; gap: 6px; font-weight: 700; }
-#rating-icon { display: inline-flex; color: var(--star); }
+#rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+}
+
+#rating-icon {
+    display: inline-flex;
+    color: var(--star);
+}
 
 #desc {
     grid-area: desc;
@@ -430,6 +556,8 @@ button:disabled {
 }
 
 /* youtube card */
+/* not yet used */
+
 #youtube-container {
     flex: 1;
     min-height: 0;
@@ -448,32 +576,74 @@ button:disabled {
     background: var(--surface-2);
 }
 
-#yt-title { font-size: 1.1rem; font-weight: 700; line-height: 1.25; }
-#yt-channel { color: var(--muted); }
-#yt-views { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+#yt-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
 
-/* ---------- 9. Swipe animations ---------- */
+#yt-channel {
+    color: var(--muted);
+}
+
+#yt-views {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+}
+
+/* swipe animations */
 
 @keyframes card-in {
-    from { opacity: 0; transform: translateY(18px) scale(0.96); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 @keyframes card-out-right {
-    from { opacity: 1; transform: translateX(0) rotate(0deg); }
-    to   { opacity: 0; transform: translateX(110%) rotate(14deg); }
+    from {
+        opacity: 1;
+        transform: translateX(0) rotate(0deg);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(110%) rotate(14deg);
+    }
 }
 
 @keyframes card-out-left {
-    from { opacity: 1; transform: translateX(0) rotate(0deg); }
-    to   { opacity: 0; transform: translateX(-110%) rotate(-14deg); }
+    from {
+        opacity: 1;
+        transform: translateX(0) rotate(0deg);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(-110%) rotate(-14deg);
+    }
 }
 
-.card-enter       { animation: card-in 280ms var(--ease-out) both; }
-.card-leave-right { animation: card-out-right 260ms var(--ease-in) both; }
-.card-leave-left  { animation: card-out-left 260ms var(--ease-in) both; }
+.card-enter {
+    animation: card-in 280ms var(--ease-out) both;
+}
 
-/* ---------- 10. Match screen ---------- */
+.card-leave-right {
+    animation: card-out-right 260ms var(--ease-in) both;
+}
+
+.card-leave-left {
+    animation: card-out-left 260ms var(--ease-in) both;
+}
+
+/* initial match screen (pre celly) */
 
 #found {
     display: grid;
@@ -492,6 +662,8 @@ button:disabled {
     gap: var(--space-2);
     border-radius: var(--radius);
     background: var(--surface);
+    color: var(--card-text);
+    --muted: var(--card-muted);
     box-shadow: var(--shadow);
     text-align: center;
     overflow: hidden;
@@ -506,7 +678,10 @@ button:disabled {
     border-radius: var(--radius-sm);
 }
 
-#found-title { font-size: 1.3rem; font-weight: 700; }
+#found-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
 
 #found-description {
     max-height: 4.5em;
@@ -515,19 +690,54 @@ button:disabled {
     font-size: 0.9rem;
 }
 
-#watch-status { grid-column: 1 / -1; grid-row: 2; }
-#found-skip-button { grid-column: 1; grid-row: 3; }
-#watch-button { grid-column: 2; grid-row: 3; }
-
-@keyframes pop-in {
-    0%   { opacity: 0; transform: scale(0.8); }
-    60%  { opacity: 1; transform: scale(1.04); }
-    100% { opacity: 1; transform: scale(1); }
+#watch-status {
+    grid-column: 1 / -1;
+    grid-row: 2;
 }
 
-/* ---------- 11. Celebration ---------- */
+#found-skip-button {
+    color: var(--muted);
+    grid-column: 1;
+    grid-row: 3;
+}
 
-#celebration { align-items: center; text-align: center; }
+#watch-button {
+    grid-column: 2;
+    grid-row: 3;
+}
+
+@keyframes pop-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    60% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* celly screen */
+
+#celebration {
+    position: relative;
+    overflow: hidden;
+    align-items: center;
+    text-align: center;
+}
+
+#confetti-container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
 
 #celebration h2 {
     color: var(--accent);
@@ -545,7 +755,10 @@ button:disabled {
     animation: pop-in 500ms var(--ease-out) 100ms both;
 }
 
-#celebration-title { font-size: 1.2rem; font-weight: 700; }
+#celebration-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
 
 #celebration-description {
     max-height: 4.2em;
@@ -555,9 +768,36 @@ button:disabled {
 }
 
 #celebration #watch-link,
-#celebration #keep-swiping-button { width: 100%; }
+#celebration #keep-swiping-button {
+    width: 100%;
+}
 
-/* ---------- 12. Waiting and loading ---------- */
+@keyframes float {
+    0% {
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--x), var(--y)) rotate(var(--r));
+    }
+}
+
+.confetti {
+    position: absolute;
+    top: var(--start-y);
+    left: var(--start-x);
+    width: 8px;
+    height: 12px;
+    border-radius: 2px;
+    background: var(--confetti-color);
+    animation: float var(--d) ease-out;
+}
+
+/* loading stuff */ 
 
 #waiting {
     align-items: center;
@@ -565,7 +805,10 @@ button:disabled {
     text-align: center;
 }
 
-#waiting-text { font-size: 1.1rem; font-weight: 600; }
+#waiting-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
 
 .loader {
     width: 36px;
@@ -576,7 +819,11 @@ button:disabled {
     animation: spin 800ms linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 #loading-screen {
     position: fixed;
@@ -591,7 +838,7 @@ button:disabled {
     backdrop-filter: blur(4px);
 }
 
-/* ---------- 13. Reduced motion ---------- */
+/* media query for rm */
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -607,12 +854,15 @@ button:disabled {
     }
 }
 
-/* intro animation */ 
+/* intro */ 
 
-/* ---------- Intro: typing title ---------- */
+.letter {
+    opacity: 0;
+}
 
-.letter { opacity: 0; }
-.letter.visible { opacity: 1; }
+.letter.visible {
+    opacity: 1;
+}
 
 .cursor {
     display: inline-block;
@@ -632,9 +882,12 @@ button:disabled {
     animation: blink 1s steps(1) infinite;
 }
 
-@keyframes blink { 50% { opacity: 0; } }
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}
 
-/* the tagline and Start button wait, then fade in once the word is typed */
 .title-rest {
     transition: opacity 400ms var(--ease-out), transform 400ms var(--ease-out);
 }

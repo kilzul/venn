@@ -4,7 +4,7 @@ import { fetchMovies, fetchGenreLookup, translateMovie } from "./api.js";
 import { hostSession, joinSession, closeSession, sendMessage } from "./network.js";
 import { MAX_PICKS, combinePrefs, getScore } from "./matching.js";
 import { buildWatchUrl } from "./links.js";
-import { playIntro } from "./intro.js";
+import { playIntro, showConfetti } from "./animations.js";
 
 
 
@@ -470,6 +470,10 @@ function changePageTo(pageId) {
     document.querySelectorAll(".page").forEach(page => {
         page.hidden = page.id !== pageId;
     });
+
+    if (pageId === "celebration") {
+        showConfetti();
+    }
 }
 
 async function showPrefsPage() {
