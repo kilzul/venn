@@ -5,34 +5,14 @@ import { hostSession, joinSession, closeSession, sendMessage } from "./network.j
 import { MAX_PICKS, combinePrefs, getScore } from "./matching.js";
 import { buildWatchUrl } from "./links.js";
 import { playIntro, showConfetti } from "./animations.js";
+import { loadPrefs, savePrefs } from "./storage.js";
+import { state, movieFilters, makeSession, resetSessionState, findCard, isMatch } from "./state.js";
 
 
 
 
-const STORAGE_KEY = "venn-prefs";  // the one localStorage key for all prefs
-
-const movieFilters = {
-    region: "CA",
-    type: "free",
-    page: 1
-};
 const MAX_TMDB_PAGE = 500;
 
-
-let role = null;
-let session = null;
-let mode = "movie"; // placeholder, will change later
-
-
-let partnerPrefs = null;
-let myPrefsReady = false;
-let prefs = loadPrefs();
-let prefsLocked = false;
-
-
-let genreList = null;
-
-let swiping = false;
 
 // animation helpers
 
@@ -51,39 +31,17 @@ function playCardAnimation(className) {
 }
 
 
-// saving and loading prefs from localstorage 
-
-function loadPrefs() {
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            return {
-                movie: { genreOrder: parsed.movie?.genreOrder ?? [] },
-                yt: parsed.yt ?? {}
-            };
-        }
-    } catch (error) {
-        console.error("Couldn't read saved preferences:", error);
-    }
-    return { movie: { genreOrder: [] }, yt: {} };
-}
-
-function savePrefs() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-}
-
 // in case tmdb changes list 
 function cleanSavedGenres() {
-    const validIds = genreList.map(genre => genre.id);
-    prefs.movie.genreOrder = prefs.movie.genreOrder
+    const validIds = state.genreList.map(genre => genre.id);
+    state.prefs.movie.genreOrder = state.prefs.movie.genreOrder
         .filter(id => validIds.includes(id))
         .slice(0, MAX_PICKS);
 }
 
 function toggleGenre(genreId) {
-    if (prefsLocked) return;
-    const order = prefs.movie.genreOrder;
+    if (state.prefsLocked) return;
+    const order = state.prefs.movie.genreOrder;
     const position = order.indexOf(genreId);
     const message = $("prefs-message");
     message.textContent = "";
@@ -106,7 +64,7 @@ function createGenreButtons() {
     const container = $("genre-container");
     container.innerHTML = "";
 
-    for (const genre of genreList) {
+    for (const genre of state.genreList) {
         const button = document.createElement("button");
         button.classList.add("genre-button");
         button.dataset.genreId = genre.id;
@@ -131,7 +89,7 @@ function refreshGenreButtons() {
 
     buttons.forEach(button => {
         const genreId = Number(button.dataset.genreId);
-        const score = getScore(prefs.movie.genreOrder, genreId);
+        const score = getScore(state.prefs.movie.genreOrder, genreId);
         const scoreLabel = button.querySelector(".genre-score");
 
         if (score > 0) {
@@ -143,7 +101,7 @@ function refreshGenreButtons() {
         }
     });
 
-    $("prefs-continue").disabled = prefsLocked || prefs.movie.genreOrder.length === 0;
+    $("prefs-continue").disabled = state.prefsLocked || state.prefs.movie.genreOrder.length === 0;
 }
 
 // deck building and swiping
@@ -157,7 +115,7 @@ async function loadMovieDeck(genreIds) {
         if (rawMovies.length > 0 || ids.length === 0) {
             return {
                 genreIds: ids,
-                deck: rawMovies.map(raw => translateMovie(raw, genreList))
+                deck: rawMovies.map(raw => translateMovie(raw, state.genreList))
             };
         }
 
@@ -166,24 +124,24 @@ async function loadMovieDeck(genreIds) {
 }
 
 async function tryBuildDeck() {
-    if (role !== "host") return;
-    if (!myPrefsReady || partnerPrefs === null) return;
+    if (state.role !== "host") return;
+    if (!state.myPrefsReady || state.partnerPrefs === null) return;
 
     $("loading-screen").hidden = false;
 
     try {
-        const combined = combinePrefs(prefs.movie.genreOrder, partnerPrefs);
+        const combined = combinePrefs(state.prefs.movie.genreOrder, state.partnerPrefs);
         const result = await loadMovieDeck(combined);
 
-        session = makeSession(result.deck, result.genreIds);
+        state.session = makeSession(result.deck, result.genreIds);
         sendMessage({ type: "deck", genreIds: result.genreIds, deck: result.deck });
 
         showCurrentCard();
     } catch (error) {
         console.error(error);
         $("prefs-status").textContent = "Couldn't build the deck. Try again.";
-        myPrefsReady = false;
-        prefsLocked = false;
+        state.myPrefsReady = false;
+        state.prefsLocked = false;
         refreshGenreButtons();
     } finally {
         $("loading-screen").hidden = true;
@@ -191,7 +149,7 @@ async function tryBuildDeck() {
 }
 
 function showCurrentCard() {
-    const movie = session.deck[session.index];
+    const movie = state.session.deck[state.session.index];
 
     if (movie === undefined) {
         reachEndOfDeck();
@@ -204,8 +162,8 @@ function showCurrentCard() {
 }
 
 function reachEndOfDeck() {
-    if (!session.iFinished) {
-        session.iFinished = true;
+    if (!state.session.iFinished) {
+        state.session.iFinished = true;
         sendMessage({ type: "finished" });
     }
     showEndOfDeck();
@@ -213,12 +171,12 @@ function reachEndOfDeck() {
 }
 
 function showEndOfDeck() {
-    if (session.currentMatchId !== null) return;
+    if (state.session.currentMatchId !== null) return;
 
     let text;
-    if (session.deckEnded) {
+    if (state.session.deckEnded) {
         text = "That's everything! No more movies to show.";
-    } else if (session.iFinished && session.partnerFinished) {
+    } else if (state.session.iFinished && state.session.partnerFinished) {
         text = "Finding more movies...";
     } else {
         text = "Your partner is still swiping...";
@@ -230,9 +188,9 @@ function showEndOfDeck() {
 }
 
 function checkBothFinished() {
-    if (role !== "host" || !session) return;
-    if (!session.iFinished || !session.partnerFinished) return;
-    if (session.fetching || session.deckEnded) return;
+    if (state.role !== "host" || !state.session) return;
+    if (!state.session.iFinished || !state.session.partnerFinished) return;
+    if (state.session.fetching || state.session.deckEnded) return;
     loadMoreCards();
 }
 
@@ -261,7 +219,7 @@ async function fetchMoreCards(currentSession) {
         }
 
         const cards = rawMovies
-            .map(raw => translateMovie(raw, genreList))
+            .map(raw => translateMovie(raw, state.genreList))
             .filter(card => {
                 if (known.has(card.id)) return false;
                 known.add(card.id);
@@ -279,16 +237,16 @@ async function fetchMoreCards(currentSession) {
 }
 
 async function loadMoreCards() {
-    if (role !== "host" || !session || session.fetching || session.deckEnded) return;
+    if (state.role !== "host" || !state.session || state.session.fetching || state.session.deckEnded) return;
 
-    const currentSession = session;
+    const currentSession = state.session;
     currentSession.fetching = true;
     $("retry-button").hidden = true;
     $("waiting-text").textContent = "Finding more movies...";
 
     try {
         const result = await fetchMoreCards(currentSession);
-        if (session !== currentSession || role !== "host") return;
+        if (state.session !== currentSession || state.role !== "host") return;
 
         if (result === null) {
             currentSession.deckEnded = true;
@@ -303,7 +261,7 @@ async function loadMoreCards() {
         addCards(result.cards, result.genreIds);
     } catch (error) {
         console.error(error);
-        if (session !== currentSession || role !== "host") return;
+        if (state.session !== currentSession || state.role !== "host") return;
         $("waiting-text").textContent = "Couldn't load more movies.";
         $("retry-button").hidden = false;
     } finally {
@@ -312,34 +270,24 @@ async function loadMoreCards() {
 }
 
 function addCards(cards, genreIds) {
-    session.deck.push(...cards);
-    session.genreIds = genreIds;
-    session.iFinished = false;
-    session.partnerFinished = false;
+    state.session.deck.push(...cards);
+    state.session.genreIds = genreIds;
+    state.session.iFinished = false;
+    state.session.partnerFinished = false;
 
-    if (session.currentMatchId === null) {
+    if (state.session.currentMatchId === null) {
         showCurrentCard();
     }
 }
 
-function findCard(id) {
-    return session.deck.find(card => card.id === id);
-}
-
-function isMatch(id) {
-    return session.likedIds.includes(id)
-        && session.partnerLikedIds.includes(id)
-        && !session.matchedIds.includes(id);
-}
-
 function handleNewMatch(id) {
-    session.matchedIds.push(id);
-    session.matchesThisBatch += 1;
+    state.session.matchedIds.push(id);
+    state.session.matchesThisBatch += 1;
 
-    if (session.currentMatchId === null) {
+    if (state.session.currentMatchId === null) {
         showMatch(id);
     } else {
-        session.pendingMatches.push(id);
+        state.session.pendingMatches.push(id);
     }
 }
 
@@ -351,34 +299,34 @@ function showMatch(id) {
     $("found-title").textContent = card.title;
     $("found-description").textContent = card.description;
     $("found-skip-button").hidden = false;
-    session.currentMatchId = id;
+    state.session.currentMatchId = id;
     updateMatchStatus();
     changePageTo("found");
 }
 
 async function handleChoice(liked) {
-    if (!session || swiping) return;
+    if (!state.session || state.swiping) return;
 
-    const movie = session.deck[session.index];
+    const movie = state.session.deck[state.session.index];
     if (!movie) return;
 
-    swiping = true;
+    state.swiping = true;
 
-    session.seenIds.push(movie.id);
+    state.session.seenIds.push(movie.id);
     if (liked) {
-        session.likedIds.push(movie.id);
+        state.session.likedIds.push(movie.id);
         sendMessage({ type: "like", movieId: movie.id });
     }
-    session.index = session.index + 1;
+    state.session.index = state.session.index + 1;
 
     try {
         await playCardAnimation(liked ? "card-leave-right" : "card-leave-left");
     } finally {
-        swiping = false;
+        state.swiping = false;
     }
 
     // the session can vanish or a match can open while the card is leaving
-    if (!session || session.currentMatchId !== null) return;
+    if (!state.session || state.session.currentMatchId !== null) return;
 
     if (liked && isMatch(movie.id)) {
         handleNewMatch(movie.id);
@@ -388,12 +336,12 @@ async function handleChoice(liked) {
 }
 
 function castVote(choice) {
-    if (!session || session.currentMatchId === null) return;
+    if (!state.session || state.session.currentMatchId === null) return;
 
-    const id = session.currentMatchId;
-    if (session.myVotes[id] !== undefined) return;
+    const id = state.session.currentMatchId;
+    if (state.session.myVotes[id] !== undefined) return;
 
-    session.myVotes[id] = choice;
+    state.session.myVotes[id] = choice;
     sendMessage({ type: "vote", movieId: id, choice: choice });
 
     updateMatchStatus();
@@ -401,11 +349,11 @@ function castVote(choice) {
 }
 
 function updateMatchStatus() {
-    const id = session.currentMatchId;
+    const id = state.session.currentMatchId;
     if (id === null) return;
 
-    const mine = session.myVotes[id];
-    const theirs = session.partnerVotes[id];
+    const mine = state.session.myVotes[id];
+    const theirs = state.session.partnerVotes[id];
 
     let text = "";
     if (mine !== undefined) {
@@ -420,13 +368,13 @@ function updateMatchStatus() {
 }
 
 function checkResolution(id) {
-    const mine = session.myVotes[id];
-    const theirs = session.partnerVotes[id];
+    const mine = state.session.myVotes[id];
+    const theirs = state.session.partnerVotes[id];
 
     if (mine === undefined || theirs === undefined) return;
-    if (session.resolvedIds.includes(id)) return;
+    if (state.session.resolvedIds.includes(id)) return;
 
-    session.resolvedIds.push(id);
+    state.session.resolvedIds.push(id);
 
     if (mine === "watch" && theirs === "watch") {
         showCelebration(id);
@@ -436,9 +384,9 @@ function checkResolution(id) {
 }
 
 function continueAfterMatch() {
-    session.currentMatchId = null;
+    state.session.currentMatchId = null;
 
-    const next = session.pendingMatches.shift();
+    const next = state.session.pendingMatches.shift();
     if (next !== undefined) {
         showMatch(next);
         return;
@@ -482,8 +430,8 @@ async function showPrefsPage() {
     $("loading-screen").hidden = false;
 
     try {
-        if (!genreList) {
-            genreList = await fetchGenreLookup();
+        if (!state.genreList) {
+            state.genreList = await fetchGenreLookup();
         }
         cleanSavedGenres();
         createGenreButtons();
@@ -497,7 +445,7 @@ async function showPrefsPage() {
 }
 
 function setSessionStatus(text) {
-    const statusId = role === "host" ? "host-status" : "join-status";
+    const statusId = state.role === "host" ? "host-status" : "join-status";
     $(statusId).textContent = text;
 }
 
@@ -505,25 +453,25 @@ function setSessionStatus(text) {
 
 const handlers = {
     "prefs-ready": (message) => {
-        if (role !== "host" || !Array.isArray(message.genreOrder)) return;
-        partnerPrefs = message.genreOrder;
+        if (state.role !== "host" || !Array.isArray(message.genreOrder)) return;
+        state.partnerPrefs = message.genreOrder;
         tryBuildDeck();
     },
 
     "deck": (message) => {
-        if (role !== "guest") return;
-        session = makeSession(message.deck, message.genreIds);
+        if (state.role !== "guest") return;
+        state.session = makeSession(message.deck, message.genreIds);
         showCurrentCard();
     },
 
     "like": (message) => {
-        if (!session) return;
+        if (!state.session) return;
 
-        const known = session.deck.some(movie => movie.id === message.movieId);
+        const known = state.session.deck.some(movie => movie.id === message.movieId);
         if (!known) return;
 
-        if (!session.partnerLikedIds.includes(message.movieId)) {
-            session.partnerLikedIds.push(message.movieId);
+        if (!state.session.partnerLikedIds.includes(message.movieId)) {
+            state.session.partnerLikedIds.push(message.movieId);
         }
 
         if (isMatch(message.movieId)) {
@@ -532,28 +480,28 @@ const handlers = {
     },
 
     "vote": (message) => {
-        if (!session) return;
+        if (!state.session) return;
         if (!findCard(message.movieId)) return;
         if (message.choice !== "watch" && message.choice !== "no") return;
-        if (session.partnerVotes[message.movieId] !== undefined) return;
+        if (state.session.partnerVotes[message.movieId] !== undefined) return;
 
-        session.partnerVotes[message.movieId] = message.choice;
+        state.session.partnerVotes[message.movieId] = message.choice;
         updateMatchStatus();
         checkResolution(message.movieId);
     },
 
     "finished": () => {
-        if (!session) return;
-        session.partnerFinished = true;
-        if (session.iFinished) showEndOfDeck();
+        if (!state.session) return;
+        state.session.partnerFinished = true;
+        if (state.session.iFinished) showEndOfDeck();
         checkBothFinished();
     },
 
     "more": (message) => {
-        if (role !== "guest" || !session) return;
+        if (state.role !== "guest" || !state.session) return;
         if (!Array.isArray(message.cards) || !Array.isArray(message.genreIds)) return;
 
-        const known = new Set(session.deck.map(card => card.id));
+        const known = new Set(state.session.deck.map(card => card.id));
         const cards = message.cards.filter(card => {
             if (!card || known.has(card.id)) return false;
             known.add(card.id);
@@ -563,8 +511,8 @@ const handlers = {
     },
 
     "deck-end": () => {
-        if (role !== "guest" || !session) return;
-        session.deckEnded = true;
+        if (state.role !== "guest" || !state.session) return;
+        state.session.deckEnded = true;
         showEndOfDeck();
     }
 };
@@ -580,9 +528,9 @@ function handleMessage(message) {
 }
 
 function handleClose() {
-    if (role === null) return;
-    const disconnectedRole = role;
-    role = null;
+    if (state.role === null) return;
+    const disconnectedRole = state.role;
+    state.role = null;
 
     closeSession();
     resetSessionState();
@@ -592,37 +540,6 @@ function handleClose() {
     $("host-session-button").disabled = false;
     $("join-session-button").disabled = false;
     changePageTo("session-menu");
-}
-
-function resetSessionState() {
-    partnerPrefs = null;
-    myPrefsReady = false;
-    prefsLocked = false;
-    session = null;
-}
-
-function makeSession(deck, genreIds) {
-    return {
-        mode: "movie",
-        genreIds: genreIds,
-        deck: deck,
-        index: 0,
-        seenIds: [],
-        likedIds: [],
-        partnerLikedIds: [],
-        matchedIds: [],
-        currentMatchId: null,
-        iFinished: false,
-        partnerFinished: false,
-        deckEnded: false,
-        fetching: false,
-        page: 1,
-        matchesThisBatch: 0,
-        myVotes: {},
-        partnerVotes: {},
-        resolvedIds: [],
-        pendingMatches: []
-    };
 }
 
 function showCode(code) {
@@ -639,7 +556,7 @@ $("start-button").addEventListener("click", () => {
 
 $("host-session-button").addEventListener("click", () => {
     resetSessionState(); 
-    role = "host";
+    state.role = "host";
 
     hostSession({
         onCode: (code) => {
@@ -665,7 +582,7 @@ $("join-session-button").addEventListener("click", () => {
     }
 
     resetSessionState();
-    role = "guest";
+    state.role = "guest";
     $("join-status").textContent = "Connecting...";
 
     joinSession(code, {
@@ -682,22 +599,22 @@ $("join-session-button").addEventListener("click", () => {
 });
 
 $("choose-movie").addEventListener("click", async () => {
-    mode = "movie";
+    state.mode = "movie";
     showPrefsPage();
 });
 
 
 
 $("prefs-continue").addEventListener("click", () => {
-    savePrefs();
-    prefsLocked = true;
+    savePrefs(state.prefs);
+    state.prefsLocked = true;
     refreshGenreButtons();
 
-    if (role === "host") {
-        myPrefsReady = true;
+    if (state.role === "host") {
+        state.myPrefsReady = true;
         tryBuildDeck();
-    } else if (role === "guest") {
-        sendMessage({ type: "prefs-ready", genreOrder: prefs.movie.genreOrder });
+    } else if (state.role === "guest") {
+        sendMessage({ type: "prefs-ready", genreOrder: state.prefs.movie.genreOrder });
     }
 
     $("prefs-status").textContent = "Waiting for partner...";
@@ -714,4 +631,4 @@ window.addEventListener("beforeunload", closeSession);
 
 playIntro();
 
-window.venn = { changePageTo, renderCard, get session() { return session; } }; // temp for testing
+window.venn = { changePageTo, renderCard, get session() { return state.session; } }; // temp for testing
